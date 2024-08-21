@@ -42,7 +42,51 @@ async def highlight_message(message, user):
     except Exception as e:
         print(f"Error highlighting message: {e}")
 
-@tasks.loop(minutes=10)
+import discord
+import asyncio
+import random
+import os
+from discord.ext import tasks
+from discord.ext import commands
+
+# Discord Bot Setup
+intents = discord.Intents.default()
+intents.message_content = True
+intents.reactions = True
+intents.guilds = True
+intents.members = True
+
+bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)  # Disable the default help command
+
+@bot.event
+async def on_ready():
+    print(f'Logged in as {bot.user}')
+    check_recent_messages.start()
+
+async def highlight_message(message, user):
+    try:
+        highlights_channel = discord.utils.get(message.guild.text_channels, name="highlights")
+        if highlights_channel:
+            if message.attachments:
+                for attachment in message.attachments:
+                    if any(attachment.filename.lower().endswith(ext) for ext in ['png', 'jpg', 'jpeg', 'gif']):
+                        embed = discord.Embed(
+                            title="Image Highlighted!",
+                            description=f"**Original Post by {message.author.display_name}:**\n{message.content}",
+                            color=discord.Color.gold()
+                        )
+                        embed.set_image(url=attachment.url)
+                        embed.set_footer(text=f"Highlighted by {user.display_name}")
+                        await highlights_channel.send(embed=embed)
+                        print(f"Message by {message.author.display_name} highlighted in {highlights_channel.name}")
+            else:
+                await message.channel.send(f"{user.mention}, no image found in the message to highlight.", delete_after=10)
+        else:
+            print("Highlights channel not found")
+    except Exception as e:
+        print(f"Error highlighting message: {e}")
+
+@tasks.loop(minutes=60)
 async def check_recent_messages():
     channel = discord.utils.get(bot.get_all_channels(), name="✨drops-and-achievements")
     if not channel:
