@@ -16,45 +16,50 @@ bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)  # Di
 @bot.event
 async def on_ready():
     print(f'Logged in as {bot.user}')
+    check_recent_messages.start()
 
-@bot.event
-async def on_reaction_add(reaction, user):
+async def highlight_message(message, user):
     try:
-        print(f"Reaction added: {reaction.emoji} by {user.display_name}")
-        print(f"Message in channel: {reaction.message.channel.name}")
-        
-        if reaction.message.channel.name == "✨drops-and-achievements":
-            print("Reaction detected in the correct channel")
-
-            if str(reaction.emoji) == "⭐":
-                print(f"Star count: {reaction.count}")
-                if reaction.count == 5:
-                    print("Detected 5 ⭐ reactions")
-
-                    highlights_channel = discord.utils.get(reaction.message.guild.text_channels, name="highlights")
-                    
-                    if highlights_channel:
-                        print("Found the highlights channel")
-                        
-                        if reaction.message.attachments:
-                            for attachment in reaction.message.attachments:
-                                if any(attachment.filename.lower().endswith(ext) for ext in ['png', 'jpg', 'jpeg', 'gif']):
-                                    print(f"Image detected: {attachment.url}")
-                                    embed = discord.Embed(
-                                        title="Image Highlighted!",
-                                        description=f"**Original Post by {reaction.message.author.display_name}:**\n{reaction.message.content}",
-                                        color=discord.Color.gold()
-                                    )
-                                    embed.set_image(url=attachment.url)
-                                    embed.set_footer(text=f"Highlighted by {user.display_name}")
-                                    await highlights_channel.send(embed=embed)
-                                    await reaction.message.channel.send(f"{user.mention}, the image has been highlighted!", delete_after=10)
-                        else:
-                            await reaction.message.channel.send(f"{user.mention}, no image found in the message to highlight.", delete_after=10)
-                    else:
-                        print("Highlights channel not found")
+        highlights_channel = discord.utils.get(message.guild.text_channels, name="highlights")
+        if highlights_channel:
+            if message.attachments:
+                for attachment in message.attachments:
+                    if any(attachment.filename.lower().endswith(ext) for ext in ['png', 'jpg', 'jpeg', 'gif']):
+                        embed = discord.Embed(
+                            title="Image Highlighted!",
+                            description=f"**Original Post by {message.author.display_name}:**\n{message.content}",
+                            color=discord.Color.gold()
+                        )
+                        embed.set_image(url=attachment.url)
+                        embed.set_footer(text=f"Highlighted by {user.display_name}")
+                        await highlights_channel.send(embed=embed)
+                        print(f"Message by {message.author.display_name} highlighted in {highlights_channel.name}")
+            else:
+                await message.channel.send(f"{user.mention}, no image found in the message to highlight.", delete_after=10)
+        else:
+            print("Highlights channel not found")
     except Exception as e:
-        print(f"Error handling reaction: {e}")
+        print(f"Error highlighting message: {e}")
+
+@tasks.loop(minutes=10)
+async def check_recent_messages():
+    channel = discord.utils.get(bot.get_all_channels(), name="✨drops-and-achievements")
+    if not channel:
+        print("Channel '✨drops-and-achievements' not found")
+        return
+
+    try:
+        # Fetch the last 20 messages
+        messages = await channel.history(limit=20).flatten()
+
+        for message in messages:
+            if any(reaction.emoji == "⭐" and reaction.count > 5 for reaction in message.reactions):
+                # Use the first user who reacted as the one who "highlighted" it
+                highlighter = next((user async for user in message.reactions[0].users()), None)
+                if highlighter:
+                    await highlight_message(message, highlighter)
+    except Exception as e:
+        print(f"Error checking recent messages: {e}")
 
 # Dice roll command
 @bot.command()
