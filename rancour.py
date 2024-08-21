@@ -19,26 +19,42 @@ async def on_ready():
 
 @bot.event
 async def on_reaction_add(reaction, user):
-    if reaction.message.channel.name == "✨drops-and-achievements":
-        if str(reaction.emoji) == "⭐" and reaction.count == 5:
-            highlights_channel = discord.utils.get(reaction.message.guild.text_channels, name="highlights")
-            if highlights_channel:
-                if reaction.message.attachments:
-                    for attachment in reaction.message.attachments:
-                        if any(attachment.filename.lower().endswith(ext) for ext in ['png', 'jpg', 'jpeg', 'gif']):
-                            embed = discord.Embed(
-                                title="Image Highlighted!",
-                                description=f"**Original Post by {reaction.message.author.display_name}:**\n{reaction.message.content}",
-                                color=discord.Color.gold()
-                            )
-                            embed.set_image(url=attachment.url)
-                            embed.set_footer(text=f"Highlighted by {user.display_name}")
-                            await highlights_channel.send(embed=embed)
-                            await reaction.message.channel.send(f"{user.mention}, the image has been highlighted!", delete_after=10)
-                else:
-                    await reaction.message.channel.send(f"{user.mention}, no image found in the message to highlight.", delete_after=10)
-            else:
-                await reaction.message.channel.send(f"{user.mention}, could not find the highlights channel.", delete_after=10)
+    try:
+        print(f"Reaction added: {reaction.emoji} by {user.display_name}")
+        print(f"Message in channel: {reaction.message.channel.name}")
+        
+        if reaction.message.channel.name == "✨drops-and-achievements":
+            print("Reaction detected in the correct channel")
+
+            if str(reaction.emoji) == "⭐":
+                print(f"Star count: {reaction.count}")
+                if reaction.count == 5:
+                    print("Detected 5 ⭐ reactions")
+
+                    highlights_channel = discord.utils.get(reaction.message.guild.text_channels, name="highlights")
+                    
+                    if highlights_channel:
+                        print("Found the highlights channel")
+                        
+                        if reaction.message.attachments:
+                            for attachment in reaction.message.attachments:
+                                if any(attachment.filename.lower().endswith(ext) for ext in ['png', 'jpg', 'jpeg', 'gif']):
+                                    print(f"Image detected: {attachment.url}")
+                                    embed = discord.Embed(
+                                        title="Image Highlighted!",
+                                        description=f"**Original Post by {reaction.message.author.display_name}:**\n{reaction.message.content}",
+                                        color=discord.Color.gold()
+                                    )
+                                    embed.set_image(url=attachment.url)
+                                    embed.set_footer(text=f"Highlighted by {user.display_name}")
+                                    await highlights_channel.send(embed=embed)
+                                    await reaction.message.channel.send(f"{user.mention}, the image has been highlighted!", delete_after=10)
+                        else:
+                            await reaction.message.channel.send(f"{user.mention}, no image found in the message to highlight.", delete_after=10)
+                    else:
+                        print("Highlights channel not found")
+    except Exception as e:
+        print(f"Error handling reaction: {e}")
 
 # Dice roll command
 @bot.command()
