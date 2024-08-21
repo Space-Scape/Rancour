@@ -51,7 +51,7 @@ async def check_recent_messages():
 
     try:
         # Fetch the last 20 messages
-        messages = await channel.history(limit=20).flatten()
+        messages = [message async for message in channel.history(limit=20)]
 
         for message in messages:
             if any(reaction.emoji == "⭐" and reaction.count > 5 for reaction in message.reactions):
