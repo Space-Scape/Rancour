@@ -65,23 +65,5 @@ async def say_with_image(ctx, *, args: str):
     else:
         await ctx.send("Please provide both a message and an image URL.")
 
-# Help command
-@bot.command()
-async def help(ctx):
-    # Delete the user's command message
-    await ctx.message.delete()
-
-    embed = discord.Embed(
-        title="Bot Commands",
-        description="Here's a list of commands you can use:",
-        color=discord.Color.blue()
-    )
-    embed.add_field(name="!roll <number of sides>", value="Rolls a single die with the specified number of sides.", inline=False)
-    embed.add_field(name="!say <message>", value="Sends a message as the bot.", inline=False)
-    embed.add_field(name="!say_with_image <message> <image_url>", value="Sends a message with an image as the bot.", inline=False)
-    embed.add_field(name="!help", value="Displays this help message.", inline=False)
-
-    await ctx.send(embed=embed)
-
 # Retrieve the bot token from the Railway environment variable
 bot.run(os.getenv('DISCORD_BOT_TOKEN'))
